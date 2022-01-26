@@ -2,6 +2,8 @@ use anomaly::format_err;
 use std::io::{self, Read, Write};
 use std::str::FromStr;
 use tracing::{debug, trace};
+use cosmrs::crypto::PublicKey;
+use tendermint::PublicKey as TPublicKey;
 
 use crate::error::{Error, ErrorKind::IoError};
 
@@ -10,6 +12,7 @@ use crate::error::{Error, ErrorKind::IoError};
 pub enum PubkeyDisplay {
     Base64,
     Bech32,
+    Json
 }
 
 impl FromStr for PubkeyDisplay {
@@ -19,6 +22,7 @@ impl FromStr for PubkeyDisplay {
         match s {
             "base64" => Ok(PubkeyDisplay::Base64),
             "bech32" => Ok(PubkeyDisplay::Bech32),
+            "json" => Ok(PubkeyDisplay::Json),
             _ => Err("unknown display type".to_owned()),
         }
     }
@@ -38,6 +42,14 @@ pub fn print_pubkey(
             println!(
                 "public key: {}",
                 subtle_encoding::bech32::encode(prefix, data)
+            );
+        }
+        Some(PubkeyDisplay::Json) => {
+            let tendermint_key = TPublicKey::Ed25519(public);
+            let json_pubkey = PublicKey::from(tendermint_key).to_json();
+            println!(
+                "public key: {}",
+                json_pubkey
             );
         }
         _ => {
